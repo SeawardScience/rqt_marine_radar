@@ -1,7 +1,5 @@
 #include "rqt_marine_radar/marine_radar_plugin.h"
-#include <pluginlib/class_list_macros.h>
-#include <ros/master.h>
-#include <marine_radar_control_msgs/RadarControlValue.h>
+#include <pluginlib/class_list_macros.hpp>
 #include <QLineEdit>
 #include <QLabel>
 
@@ -49,9 +47,12 @@ void MarineRadarPlugin::shutdownPlugin()
         for(auto c: m_connections)
             QObject::disconnect(c);
     }
-    m_dataSubscriber.shutdown();
-    m_stateSubscriber.shutdown();
-    m_stateChangePublisher.shutdown();
+    // TODO: commenting this out so it compiles, ros2 pubs/subs don't seem to have a shutdown function
+    // probably don't need to do this when shutting down entire plugin?
+    //m_dataSubscriber.shutdown();
+    //m_stateSubscriber.shutdown();
+    //m_stateChangePublisher.shutdown();
+    //rcl_publisher_fini(m_stateChangePublisher, &node_);
 }
 
 void MarineRadarPlugin::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const
@@ -78,14 +79,19 @@ void MarineRadarPlugin::updateTopicList()
 {
     QString selected = m_ui.topicsComboBox->currentText();
     
-    ros::master::V_TopicInfo topic_info;
-    ros::master::getTopics(topic_info);
-    
+    auto topic_info = node_->get_topic_names_and_types();
+
     QList<QString> topics;
-    for(const auto t: topic_info)
-        if (t.datatype == "marine_radar_control_msgs/RadarControlSet")
-            topics.append(t.name.c_str());
-        
+    for(const auto t: topic_info) 
+    {
+        std::vector<std::string> topic_types = t.second;
+        for (const auto& topic_type : topic_types) 
+        {
+            if (topic_type.c_str() == "marine_radar_control_msgs/RadarControlSet") 
+                topics.append(t.first.c_str());
+        }
+    }
+
     topics.append("");
     qSort(topics);
     m_ui.topicsComboBox->clear();
@@ -116,26 +122,33 @@ void MarineRadarPlugin::selectTopic(const QString& topic)
 
 void MarineRadarPlugin::onTopicChanged(int index)
 {
-    m_dataSubscriber.shutdown();
-    m_stateSubscriber.shutdown();
-    m_stateChangePublisher.shutdown();
+    // TODO: commenting this out so it compiles, ros2 pubs/subs don't seem to have a shutdown function
+    // Will this stop us from being able to subscribe to new topics if they change? 
+    //m_dataSubscriber.shutdown();
+    //m_stateSubscriber.shutdown();
+    //m_stateChangePublisher.shutdown();
     
     QString topic = m_ui.topicsComboBox->itemData(index).toString();
     if(!topic.isEmpty())
     {
-        m_stateSubscriber = getNodeHandle().subscribe(topic.toStdString(), 10, &MarineRadarPlugin::stateCallback, this);
+        //m_stateSubscriber = getNodeHandle().subscribe(topic.toStdString(), 10, &MarineRadarPlugin::stateCallback, this);
+        m_stateSubscriber = node_->create_subscription<marine_radar_control_msgs::msg::RadarControlSet>(
+                            topic.toStdString(), 10, std::bind(&MarineRadarPlugin::stateCallback, this, _1));
 
         QString data_topic = topic;
         data_topic.chop(5);
         data_topic += "data";
         
-        m_dataSubscriber = getNodeHandle().subscribe(data_topic.toStdString(), 10, &MarineRadarPlugin::dataCallback, this);
+        //m_dataSubscriber = getNodeHandle().subscribe(data_topic.toStdString(), 10, &MarineRadarPlugin::dataCallback, this);
+        m_dataSubscriber = node_->create_subscription<marine_sensor_msgs::msg::RadarSector>(
+                           data_topic.toStdString(), 10, std::bind(&MarineRadarPlugin::dataCallback, this, _1));
 
         QString state_change_topic = topic;
         state_change_topic.chop(5);
         state_change_topic += "change_state";
         
-        m_stateChangePublisher = getNodeHandle().advertise<marine_radar_control_msgs::RadarControlValue>(state_change_topic.toStdString(),10);
+        //m_stateChangePublisher = getNodeHandle().advertise<marine_radar_control_msgs::msg::RadarControlValue>(state_change_topic.toStdString(),10);
+        m_stateChangePublisher = node_->create_publisher<marine_radar_control_msgs::msg::RadarControlValue>(state_change_topic.toStdString(), 10);
     }
 }
 
@@ -155,31 +168,31 @@ void MarineRadarPlugin::onFadePeriodDoubleSpinBoxValueChanged()
 }
 
 
-void MarineRadarPlugin::dataCallback(const marine_sensor_msgs::RadarSector& msg)
+void MarineRadarPlugin::dataCallback(const marine_sensor_msgs::msg::RadarSector::ConstSharedPtr& msg)
 {
     //std::cerr << "radar data!" << std::endl;
-    if (!msg.intensities.empty())
+    if (!msg->intensities.empty())
     {
-        double angle1 = msg.angle_start;
-        double angle2 = angle1+ msg.angle_increment*(msg.intensities.size()-1);
-        double range = msg.range_max;
-        int w = msg.intensities.front().echoes.size();
-        int h = msg.intensities.size();
+        double angle1 = msg->angle_start;
+        double angle2 = angle1+ msg->angle_increment*(msg->intensities.size()-1);
+        double range = msg->range_max;
+        int w = msg->intensities.front().echoes.size();
+        int h = msg->intensities.size();
         QImage * sector = new QImage(w,h,QImage::Format_Grayscale8);
         sector->fill(Qt::darkGray);
         for(int i = 0; i < h; i++)
             for(int j = 0; j < w; j++)
-                sector->bits()[(h-1-i)*w+j] = msg.intensities[i].echoes[j]*255; // convert from float to 8 bits
-        QDateTime timestamp = QDateTime::fromMSecsSinceEpoch(msg.header.stamp.toSec()*1000,Qt::UTC);
+                sector->bits()[(h-1-i)*w+j] = msg->intensities[i].echoes[j]*255; // convert from float to 8 bits
+        QDateTime timestamp = QDateTime::fromMSecsSinceEpoch(msg->header.stamp.sec * 1000, Qt::UTC);
         QMetaObject::invokeMethod(m_ui.openGLWidget,"addSector", Qt::QueuedConnection, Q_ARG(double, angle1), Q_ARG(double, angle2), Q_ARG(double, range), Q_ARG(QImage *, sector), Q_ARG(QDateTime, timestamp));
     }
 }
 
-void MarineRadarPlugin::stateCallback(const marine_radar_control_msgs::RadarControlSet& msg)
+void MarineRadarPlugin::stateCallback(const marine_radar_control_msgs::msg::RadarControlSet::ConstSharedPtr& msg)
 {
     std::lock_guard<std::mutex> lock(m_state_mutex);
     m_new_state.clear();
-    for(const auto i: msg.items)
+    for(const auto i: msg->items)
         m_new_state.push_back(i);
     
     QMetaObject::invokeMethod(this,"updateState", Qt::QueuedConnection);
@@ -199,7 +212,7 @@ void MarineRadarPlugin::updateState()
             cs.state = new QLabel(QString::fromStdString(state.value));
             switch (state.type)
             {
-                case marine_radar_control_msgs::RadarControlItem::CONTROL_TYPE_FLOAT:
+                case marine_radar_control_msgs::msg::RadarControlItem::CONTROL_TYPE_FLOAT:
                     {
                         QLineEdit *le = new QLineEdit();
                         le->setMaximumWidth(100); 
@@ -209,10 +222,10 @@ void MarineRadarPlugin::updateState()
                         le->setValidator(v);
                         le->setToolTip("Range: " + QString::number(state.min_value) + " to " + QString::number(state.max_value));
                         cs.input = le;
-                        m_connections.push_back(connect(le, &QLineEdit::editingFinished, this, [=](){marine_radar_control_msgs::RadarControlValue kv; kv.key=state.name; kv.value=le->text().toStdString(); this->m_stateChangePublisher.publish(kv);}));
+                        m_connections.push_back(connect(le, &QLineEdit::editingFinished, this, [=](){marine_radar_control_msgs::msg::RadarControlValue kv; kv.key=state.name; kv.value=le->text().toStdString(); this->m_stateChangePublisher->publish(kv);}));
                     }
                     break;
-                case marine_radar_control_msgs::RadarControlItem::CONTROL_TYPE_FLOAT_WITH_AUTO:
+                case marine_radar_control_msgs::msg::RadarControlItem::CONTROL_TYPE_FLOAT_WITH_AUTO:
                     {
                         cs.input = new QWidget();
                         QHBoxLayout *horizontalLayout = new QHBoxLayout(cs.input);
@@ -225,21 +238,21 @@ void MarineRadarPlugin::updateState()
                         lineEdit->setValidator(v);
                         lineEdit->setToolTip("Range: " + QString::number(state.min_value) + " to " + QString::number(state.max_value));
 
-                        m_connections.push_back(connect(lineEdit, &QLineEdit::editingFinished, this, [=](){marine_radar_control_msgs::RadarControlValue kv; kv.key=state.name; kv.value=lineEdit->text().toStdString(); this->m_stateChangePublisher.publish(kv);}));
+                        m_connections.push_back(connect(lineEdit, &QLineEdit::editingFinished, this, [=](){marine_radar_control_msgs::msg::RadarControlValue kv; kv.key=state.name; kv.value=lineEdit->text().toStdString(); this->m_stateChangePublisher->publish(kv);}));
                         horizontalLayout->addWidget(lineEdit);
                         QPushButton *autoButton = new QPushButton("auto");
                         autoButton->setMaximumWidth(35);
                         horizontalLayout->addWidget(autoButton);
-                        m_connections.push_back(connect(autoButton, &QAbstractButton::clicked, this, [=](){marine_radar_control_msgs::RadarControlValue kv; kv.key=state.name; kv.value="auto"; this->m_stateChangePublisher.publish(kv);}));
+                        m_connections.push_back(connect(autoButton, &QAbstractButton::clicked, this, [=](){marine_radar_control_msgs::msg::RadarControlValue kv; kv.key=state.name; kv.value="auto"; this->m_stateChangePublisher->publish(kv);}));
                     }
                     break;
-                case marine_radar_control_msgs::RadarControlItem::CONTROL_TYPE_ENUM:
+                case marine_radar_control_msgs::msg::RadarControlItem::CONTROL_TYPE_ENUM:
                     {
                         QComboBox *cb = new QComboBox();
                         for(auto e: state.enums)
                             cb->addItem(QString::fromStdString(e));
                         cb->setMaximumWidth(100); 
-                        m_connections.push_back(connect(cb, QOverload<int>::of(&QComboBox::activated), this, [=](int index){marine_radar_control_msgs::RadarControlValue kv; kv.key=state.name; kv.value=cb->itemText(index).toStdString(); this->m_stateChangePublisher.publish(kv);}));
+                        m_connections.push_back(connect(cb, QOverload<int>::of(&QComboBox::activated), this, [=](int index){marine_radar_control_msgs::msg::RadarControlValue kv; kv.key=state.name; kv.value=cb->itemText(index).toStdString(); this->m_stateChangePublisher->publish(kv);}));
                         cs.input = cb;
                     }
                     break;

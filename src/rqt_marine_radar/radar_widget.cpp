@@ -2,7 +2,7 @@
 #include <QOpenGLShader>
 #include <QOpenGLTexture>
 #include <QTimer>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 namespace rqt_marine_radar
 {
@@ -96,7 +96,7 @@ void RadarWidget::paintGL()
     m_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
     m_program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 3, 3 * sizeof(GLfloat));
 
-    auto now = QDateTime::fromMSecsSinceEpoch(ros::Time::now().toSec()*1000);
+    auto now = QDateTime::fromMSecsSinceEpoch(rclcpp::Clock().now().seconds()*1000);
     QDateTime faded_out = now.addMSecs(-1000*m_fade_time);
 
     while(!m_sectors.empty() && m_sectors.front().timestamp < faded_out)
@@ -129,10 +129,11 @@ void RadarWidget::paintGL()
 
 void RadarWidget::addSector(double angle1, double angle2, double range, QImage *sector, QDateTime timestamp)
 {
-    auto now = QDateTime::fromMSecsSinceEpoch(ros::Time::now().toSec()*1000);
+    auto now = QDateTime::fromMSecsSinceEpoch(rclcpp::Clock().now().seconds()*1000);
     QDateTime faded_out = now.addMSecs(-1000*m_fade_time);
-    if(timestamp < faded_out)
-        ROS_WARN_STREAM_THROTTLE(1.0, "Received expired radar data. Are the machine times synced? " << timestamp.msecsTo(now)/1000.0 << " seconds behind." );
+    //if(timestamp < faded_out)
+        // TODO
+        //RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), *rclcpp::Clock(), 1.0, "Received expired radar data. Are the machine times synced? " << timestamp.msecsTo(now)/1000.0 << " seconds behind." );
     Sector s;
     if(angle1 < angle2)
         s.angle1 = angle1+(2.0*M_PI);

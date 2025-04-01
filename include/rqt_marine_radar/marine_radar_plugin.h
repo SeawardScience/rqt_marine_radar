@@ -3,10 +3,14 @@
 
 #include <rqt_gui_cpp/plugin.h>
 #include <ui_marine_radar_plugin.h>
-#include <ros/ros.h>
-#include <marine_sensor_msgs/RadarSector.h>
-#include <marine_radar_control_msgs/RadarControlSet.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rcl/rcl.h>
+#include <marine_sensor_msgs/msg/radar_sector.hpp>
+#include <marine_radar_control_msgs/msg/radar_control_set.hpp>
+#include <marine_radar_control_msgs/msg/radar_control_value.hpp>
 #include <mutex>
+
+using std::placeholders::_1;
 
 class QLabel;
 
@@ -34,17 +38,17 @@ protected slots:
     virtual void onShowRadarPushButtonClicked();
     virtual void onFadePeriodDoubleSpinBoxValueChanged();
   
-    virtual void dataCallback(const marine_sensor_msgs::RadarSector &msg);
-    virtual void stateCallback(const marine_radar_control_msgs::RadarControlSet &msg); 
+    virtual void dataCallback(const marine_sensor_msgs::msg::RadarSector::ConstSharedPtr& msg);
+    virtual void stateCallback(const marine_radar_control_msgs::msg::RadarControlSet::ConstSharedPtr& msg); 
   
     void updateState();
   
 private:
     Ui::MarineRadarWidget m_ui;
     QWidget* m_widget;
-    ros::Subscriber m_dataSubscriber;
-    ros::Subscriber m_stateSubscriber;
-    ros::Publisher m_stateChangePublisher;
+    rclcpp::Subscription<marine_sensor_msgs::msg::RadarSector>::ConstSharedPtr m_dataSubscriber;
+    rclcpp::Subscription<marine_radar_control_msgs::msg::RadarControlSet>::ConstSharedPtr m_stateSubscriber;
+    rclcpp::Publisher<marine_radar_control_msgs::msg::RadarControlValue>::SharedPtr m_stateChangePublisher;
 
     QString m_arg_topic;
     
@@ -58,7 +62,7 @@ private:
     std::map<std::string,ControlSet> m_controls;
     std::vector<QMetaObject::Connection> m_connections;
     
-    std::vector<marine_radar_control_msgs::RadarControlItem> m_new_state;
+    std::vector<marine_radar_control_msgs::msg::RadarControlItem> m_new_state;
     std::mutex m_state_mutex;
 };
 

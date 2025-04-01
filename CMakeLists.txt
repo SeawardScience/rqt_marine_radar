@@ -1,28 +1,50 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.14.4)
 project(rqt_marine_radar)
 
-add_compile_options(-std=c++11)
+#add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED COMPONENTS
-    roscpp
-    roslint
-    rqt_gui
-    rqt_gui_cpp
-    marine_sensor_msgs
-    marine_radar_control_msgs
+set(ROS_DEPENDS
+  ament_cmake
+  rclcpp
+  qt_gui_cpp
+  rqt_gui_cpp
+  ament_lint_auto
+  marine_radar_control_msgs
+  marine_sensor_msgs
 )
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
+set(EXTERNAL_DEPENDS
+  Qt5Widgets
+)
 
-if(CMAKE_VERSION VERSION_LESS "3.7.0")
-    set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(EXTERNAL_DEPENDS_LIB 
+
+)
+
+get_filename_component(PACKAGE_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+message("Creating Package: ${PACKAGE_NAME}")
+project(${PACKAGE_NAME})  ## this package name is the name of the directory this cmake file is in
+
+add_compile_definitions(CMAKE_PACKAGE_NAME=${PACKAGE_NAME})
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# Default to C++17 for humble
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-roslint_cpp()
+###
+###  Add dependencies
+###
+
+foreach(DEPEND ${ROS_DEPENDS} ${EXTERNAL_DEPENDS})
+  find_package(${DEPEND} REQUIRED)
+endforeach(DEPEND)
 
 set(rqt_marine_radar_SRCS
     src/rqt_marine_radar/marine_radar_plugin.cpp
@@ -38,67 +60,61 @@ set(rqt_marine_radar_UIS
     src/rqt_marine_radar/marine_radar_plugin.ui
 )
 
-set(rqt_marine_radar_INCLUDE_DIRECTORIES
-  include
-  "${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}"
-)
-if(NOT EXISTS "${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}")
-  file(MAKE_DIRECTORY "${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}")
-endif()
-
-catkin_package(
-  INCLUDE_DIRS ${rqt_marine_radar_INCLUDE_DIRECTORIES}
-  LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp rqt_gui_cpp rqt_gui marine_sensor_msgs marine_radar_control_msgs
-#  DEPENDS system_lib
-)
-
-catkin_python_setup()
-
 qt5_wrap_cpp(rqt_marine_radar_MOCS ${rqt_marine_radar_HDRS})
-
-set(_cmake_current_binary_dir "${CMAKE_CURRENT_BINARY_DIR}")
-set(CMAKE_CURRENT_BINARY_DIR "${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}")
 qt5_wrap_ui(rqt_marine_radar_UIS_H ${rqt_marine_radar_UIS})
-set(CMAKE_CURRENT_BINARY_DIR "${_cmake_current_binary_dir}")
 
-include_directories(
-    ${rqt_marine_radar_INCLUDE_DIRECTORIES}
-    ${catkin_INCLUDE_DIRS}
-)
-
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
     ${rqt_marine_radar_SRCS}
     ${rqt_marine_radar_MOCS}
     ${rqt_marine_radar_UIS_H}
 )
 
-qt5_use_modules(${PROJECT_NAME} Widgets)
-
-target_link_libraries(${PROJECT_NAME}
-    ${QT_LIBRARIES}
-    ${catkin_LIBRARIES}
+target_include_directories(${PROJECT_NAME} PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
 )
 
-find_package(class_loader)
-class_loader_hide_library_symbols(${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME} PUBLIC
+  ${rclcpp_TARGETS}
+  ${qt_gui_cpp_TARGETS}
+  ${rqt_gui_cpp_TARGETS}
+  ${marine_sensor_msgs_TARGETS}
+  ${marine_radar_control_msgs_TARGETS}
+  Qt5::Widgets
+)
 
+##################
+## INSTALLATION ##
+##################
+
+message("  Installing: " ${EXECUTABLES})
+
+install(TARGETS ${PROJECT_NAME}
+  EXPORT ${PROJECT_NAME}
+  ARCHIVE DESTINATION lib/${PROJECT_NAME}
+  LIBRARY DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION bin/${PROJECT_NAME}
+)
+
+install(PROGRAMS scripts/rqt_marine_radar
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 install(FILES
   plugin.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  DESTINATION share/${PROJECT_NAME}
 )
 
-install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-)
+pluginlib_export_plugin_description_file(rqt_gui "plugin.xml")
 
-catkin_install_python(PROGRAMS scripts/rqt_marine_radar
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
 
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-)
+#############
+## testing ##
+#############
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+ament_package()
