@@ -100,13 +100,17 @@ install(PROGRAMS scripts/rqt_marine_radar
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(
+  DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
+)
+
 install(FILES
   plugin.xml
   DESTINATION share/${PROJECT_NAME}
 )
 
 pluginlib_export_plugin_description_file(rqt_gui "plugin.xml")
-
 
 #############
 ## testing ##

@@ -1,4 +1,4 @@
-<library path="/rqt_marine_radar">
+<library path="rqt_marine_radar">
     <class name="rqt_marine_radar/MarineRadarPlugin" type="rqt_marine_radar::MarineRadarPlugin" base_class_type="rqt_gui_cpp::Plugin">
         <description>
             An interface to view and control marine radars.
