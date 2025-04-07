@@ -4,9 +4,26 @@ Allows viewing of marine radar data as well as controlling supported hardware.
 
 ## Installation
 
-Clone this repo into your workspace and make sure you have the following dependant packages:
+Clone this repo into your workspace: 
 
-* marine_sensor_msgs (pending rosdistro inclusion): https://github.com/apl-ocean-engineering/marine_msgs
-* marine_radar_control_messages: https://github.com/CCOMJHC/marine_radar_control_msgs
+```git clone git@github.com:CCOMJHC/rqt_marine_radar.git```
 
-Build your workspace using catkin_make or similar build system.
+### Dependencies
+
+Install package dependencies for your ROS2 distribution:
+
+```sudo apt install ros-<distro>-marine-sensor-msgs```
+
+Alternatively, you can use the development package here: https://github.com/apl-ocean-engineering/marine_msgs
+
+Clone the `marine_radar_control_msgs` repo: 
+
+```git clone git@github.com:CCOMJHC/marine_radar_control_msgs.git```
+
+### Build
+
+From the root of your workspace, run `colcon build`.
+
+## Usage
+
+TODO: plugin screenshot with radar connected
