@@ -131,7 +131,6 @@ void MarineRadarPlugin::onTopicChanged(int index)
     QString topic = m_ui.topicsComboBox->itemData(index).toString();
     if(!topic.isEmpty())
     {
-        //m_stateSubscriber = getNodeHandle().subscribe(topic.toStdString(), 10, &MarineRadarPlugin::stateCallback, this);
         m_stateSubscriber = node_->create_subscription<marine_radar_control_msgs::msg::RadarControlSet>(
                             topic.toStdString(), 10, std::bind(&MarineRadarPlugin::stateCallback, this, _1));
 
@@ -139,7 +138,6 @@ void MarineRadarPlugin::onTopicChanged(int index)
         data_topic.chop(5);
         data_topic += "data";
         
-        //m_dataSubscriber = getNodeHandle().subscribe(data_topic.toStdString(), 10, &MarineRadarPlugin::dataCallback, this);
         m_dataSubscriber = node_->create_subscription<marine_sensor_msgs::msg::RadarSector>(
                            data_topic.toStdString(), 10, std::bind(&MarineRadarPlugin::dataCallback, this, _1));
 
@@ -147,7 +145,6 @@ void MarineRadarPlugin::onTopicChanged(int index)
         state_change_topic.chop(5);
         state_change_topic += "change_state";
         
-        //m_stateChangePublisher = getNodeHandle().advertise<marine_radar_control_msgs::msg::RadarControlValue>(state_change_topic.toStdString(),10);
         m_stateChangePublisher = node_->create_publisher<marine_radar_control_msgs::msg::RadarControlValue>(state_change_topic.toStdString(), 10);
     }
 }

@@ -27,3 +27,18 @@ From the root of your workspace, run `colcon build`.
 ## Usage
 
 TODO: plugin screenshot with radar connected
+
+## Topics
+
+### Subscribed Topics 
+
+| Topic  | Data Type                                   | 
+|--------|---------------------------------------------|
+| `todo` | `marine_radar_control_msgs/RadarControlSet` |
+| `todo` | `marine_sensor_msgs/RadarSector` |
+
+### Published Topics 
+
+| Topic  | Data Type                                   | 
+|--------|---------------------------------------------|
+| `todo + change_state` | `marine_radar_control_msgs/RadarControlValue` |
