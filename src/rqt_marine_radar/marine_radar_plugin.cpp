@@ -135,12 +135,6 @@ void MarineRadarPlugin::onTopicChanged(int index)
         data_topic.chop(5);
         data_topic += "data";
 
-        std::cerr << "data topic: ";
-        //RCLCPP_INFO("data topic: ");
-        //RCLCPP_INFO(data_topic.toStdString());
-        std::cerr << data_topic.toStdString() << std::endl;
-
-
         m_dataSubscriber = node_->create_subscription<marine_sensor_msgs::msg::RadarSector>(
                            data_topic.toStdString(), 10, std::bind(&MarineRadarPlugin::dataCallback, this, _1));
 
@@ -170,10 +164,9 @@ void MarineRadarPlugin::onFadePeriodDoubleSpinBoxValueChanged()
 
 void MarineRadarPlugin::dataCallback(const marine_sensor_msgs::msg::RadarSector::ConstSharedPtr& msg)
 {
-    std::cerr << "radar data!" << std::endl;
+    // std::cerr << "radar data!" << std::endl;
     if (!msg->intensities.empty())
     {
-        std::cerr << "msg intensities are not empty!" << std::endl;
         double angle1 = msg->angle_start;
         double angle2 = angle1+ msg->angle_increment*(msg->intensities.size()-1);
         double range = msg->range_max;
@@ -188,7 +181,6 @@ void MarineRadarPlugin::dataCallback(const marine_sensor_msgs::msg::RadarSector:
         qint64 msecs = static_cast<qint64>(msg->header.stamp.sec) * 1000 +
                        static_cast<qint64>(msg->header.stamp.nanosec) / 1000000;
         QDateTime timestamp = QDateTime::fromMSecsSinceEpoch(msecs, Qt::UTC);
-        std::cerr << msecs << std::endl;
         QMetaObject::invokeMethod(m_ui.openGLWidget,"addSector", Qt::QueuedConnection, Q_ARG(double, angle1), Q_ARG(double, angle2), Q_ARG(double, range), Q_ARG(QImage *, sector), Q_ARG(QDateTime, timestamp));
     }
 }
