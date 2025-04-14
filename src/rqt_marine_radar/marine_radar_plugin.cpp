@@ -173,6 +173,7 @@ void MarineRadarPlugin::dataCallback(const marine_sensor_msgs::msg::RadarSector:
     std::cerr << "radar data!" << std::endl;
     if (!msg->intensities.empty())
     {
+        std::cerr << "msg intensities are not empty!" << std::endl;
         double angle1 = msg->angle_start;
         double angle2 = angle1+ msg->angle_increment*(msg->intensities.size()-1);
         double range = msg->range_max;
@@ -183,7 +184,11 @@ void MarineRadarPlugin::dataCallback(const marine_sensor_msgs::msg::RadarSector:
         for(int i = 0; i < h; i++)
             for(int j = 0; j < w; j++)
                 sector->bits()[(h-1-i)*w+j] = msg->intensities[i].echoes[j]*255; // convert from float to 8 bits
-        QDateTime timestamp = QDateTime::fromMSecsSinceEpoch(msg->header.stamp.sec * 1000, Qt::UTC);
+        
+        qint64 msecs = static_cast<qint64>(msg->header.stamp.sec) * 1000 +
+                       static_cast<qint64>(msg->header.stamp.nanosec) / 1000000;
+        QDateTime timestamp = QDateTime::fromMSecsSinceEpoch(msecs, Qt::UTC);
+        std::cerr << msecs << std::endl;
         QMetaObject::invokeMethod(m_ui.openGLWidget,"addSector", Qt::QueuedConnection, Q_ARG(double, angle1), Q_ARG(double, angle2), Q_ARG(double, range), Q_ARG(QImage *, sector), Q_ARG(QDateTime, timestamp));
     }
 }
