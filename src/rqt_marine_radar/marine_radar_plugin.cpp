@@ -134,7 +134,13 @@ void MarineRadarPlugin::onTopicChanged(int index)
         QString data_topic = topic;
         data_topic.chop(5);
         data_topic += "data";
-        
+
+        std::cerr << "data topic: ";
+        //RCLCPP_INFO("data topic: ");
+        //RCLCPP_INFO(data_topic.toStdString());
+        std::cerr << data_topic.toStdString() << std::endl;
+
+
         m_dataSubscriber = node_->create_subscription<marine_sensor_msgs::msg::RadarSector>(
                            data_topic.toStdString(), 10, std::bind(&MarineRadarPlugin::dataCallback, this, _1));
 
@@ -164,7 +170,7 @@ void MarineRadarPlugin::onFadePeriodDoubleSpinBoxValueChanged()
 
 void MarineRadarPlugin::dataCallback(const marine_sensor_msgs::msg::RadarSector::ConstSharedPtr& msg)
 {
-    //std::cerr << "radar data!" << std::endl;
+    std::cerr << "radar data!" << std::endl;
     if (!msg->intensities.empty())
     {
         double angle1 = msg->angle_start;
