@@ -86,8 +86,8 @@ void MarineRadarPlugin::updateTopicList()
         std::vector<std::string> topic_types = t.second;
         for (const auto& topic_type : topic_types) 
         {
-            if (topic_type.c_str() == "marine_radar_control_msgs/RadarControlSet") 
-                topics.append(t.first.c_str());
+            if (t.second[0] == "marine_radar_control_msgs/msg/RadarControlSet")
+                topics.append(QString::fromStdString(t.first));
         }
     }
 
