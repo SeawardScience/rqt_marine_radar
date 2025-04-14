@@ -47,11 +47,10 @@ void MarineRadarPlugin::shutdownPlugin()
         for(auto c: m_connections)
             QObject::disconnect(c);
     }
-    // TODO: commenting this out so it compiles, ros2 pubs/subs don't seem to have a shutdown function
-    // probably don't need to do this when shutting down entire plugin?
-    //m_dataSubscriber.shutdown();
-    //m_stateSubscriber.shutdown();
-    //m_stateChangePublisher.shutdown();
+    
+    m_dataSubscriber.reset();
+    m_stateSubscriber.reset();
+    m_stateChangePublisher.reset();
     //rcl_publisher_fini(m_stateChangePublisher, &node_);
 }
 
@@ -122,11 +121,9 @@ void MarineRadarPlugin::selectTopic(const QString& topic)
 
 void MarineRadarPlugin::onTopicChanged(int index)
 {
-    // TODO: commenting this out so it compiles, ros2 pubs/subs don't seem to have a shutdown function
-    // Will this stop us from being able to subscribe to new topics if they change? 
-    //m_dataSubscriber.shutdown();
-    //m_stateSubscriber.shutdown();
-    //m_stateChangePublisher.shutdown();
+    m_dataSubscriber.reset();
+    m_stateSubscriber.reset();
+    m_stateChangePublisher.reset();
     
     QString topic = m_ui.topicsComboBox->itemData(index).toString();
     if(!topic.isEmpty())
