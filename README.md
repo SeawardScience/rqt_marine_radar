@@ -2,6 +2,8 @@
 
 Allows viewing of marine radar data as well as controlling supported hardware.
 
+![](./docs/media/rqt_marine_radar_example.gif)
+
 ## Installation
 
 Clone this repo into your workspace: 
@@ -24,21 +26,27 @@ Clone the `marine_radar_control_msgs` repo:
 
 From the root of your workspace, run `colcon build`.
 
+
 ## Usage
 
-TODO: plugin screenshot with radar connected
+When running for the first time, may need to append the `--force-discover` argument to the following command:
+
+```ros2 run rqt_marine_radar rqt_marine_radar```
 
 ## Topics
 
+The `simrad_halo_radar` node publishes data and state from each of the dual frequencies of the Halo radar. The first frequency is addressed by `/halo_a` and `/halo_b`. `<radar_freq_address>` in the topic names below refers to either the `/halo_a` or `/halo_b` topics.
+
 ### Subscribed Topics 
 
-| Topic  | Data Type                                   | 
-|--------|---------------------------------------------|
-| `todo` | `marine_radar_control_msgs/RadarControlSet` |
-| `todo` | `marine_sensor_msgs/RadarSector` |
+| Topic                        | Data Type                                       | 
+|------------------------------|-------------------------------------------------|
+| `<radar_freq_address>/data`  | `marine_sensor_msgs/msg/RadarSector`            |
+| `<radar_freq_address>/state` | `marine_radar_control_msgs/msg/RadarControlSet` |
+
 
 ### Published Topics 
 
-| Topic  | Data Type                                   | 
-|--------|---------------------------------------------|
-| `todo + change_state` | `marine_radar_control_msgs/RadarControlValue` |
+| Topic                               | Data Type                                         | 
+|-------------------------------------|---------------------------------------------------|
+| `<radar_freq_address>/change_state` | `marine_radar_control_msgs/msg/RadarControlValue` |
