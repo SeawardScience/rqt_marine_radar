@@ -29,9 +29,14 @@ From the root of your workspace, run `colcon build`.
 
 ## Usage
 
-When running for the first time, may need to append the `--force-discover` argument to the following command:
+To run the plugin standalone in RQT, run: 
 
 ```ros2 run rqt_marine_radar rqt_marine_radar```
+
+(When running after the first build/install, you may need to append the `--force-discover` argument to the above command for RQT to discover the plugin.)
+
+To use the plugin alongside other RQT plugins, run RQT and load the plugin from the Plugins menu (`Plugins > Marine Radar Plugin`). (You may also need to append `--force-discover` after the first build/install, e.g. `rqt --force-discover`).
+
 
 ## Topics
 
